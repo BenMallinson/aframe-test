@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>three.js webgl - glTF loader</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="main.css">
+</head>
+
+<body>
+<script type="module">
+  import * as THREE from './build/three.module.js';
+  import { OrbitControls } from './jsm/controls/OrbitControls.js';
+  import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+
+  var container, controls, mixer;
+  var camera, scene, renderer;
+  var clock = new THREE.Clock()
+  var fps = 60
+
+  init();
+  render();
+
+  function init() {
+    container = document.createElement( 'div' );
+    document.body.appendChild( container );
+
+    camera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.25, 100 );
+    camera.position.set( 200,  100, 200 );
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color( 0xffffff );
+        new GLTFLoader().load( 'testtown.gltf', function ( gltf ) {
+          console.log(gltf)
+          var model = gltf.scene
+          var animations = gltf.animations
+            model.scale.set(0.01, 0.01, 0.01)
+          scene.add(model)
+          mixer = new THREE.AnimationMixer( model );
+          var action = mixer.clipAction( animations[0] ); // access first animation clip
+          action.play();
+          render();
+        } );
+
+    renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.8;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    container.appendChild( renderer.domElement );
+
+    controls = new OrbitControls( camera, renderer.domElement );
+    controls.addEventListener( 'change', render ); // use if there is no animation loop
+    controls.minDistance = 1;
+    controls.maxDistance = 50
+    controls.target.set( 0, 0, 0);
+    controls.update();
+
+    window.addEventListener( 'resize', onWindowResize, false );
+  }
+
+  function onWindowResize() {
+
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+    render();
+  }
+
+  function render() {
+    renderer.render( scene, camera );
+    setTimeout(function() {
+      requestAnimationFrame( render );
+      var delta = clock.getDelta();
+      if ( mixer ) mixer.update( delta );
+    }, 1000 / fps);
+  }
+</script>
+</body>
+</html>
